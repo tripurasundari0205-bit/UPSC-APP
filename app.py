@@ -23,6 +23,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 # LLM (OpenAI SDK)
 from openai import OpenAI
+import streamlit as st
 
 # ---------------------------
 # App Config

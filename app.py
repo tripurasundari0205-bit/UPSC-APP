@@ -147,41 +147,40 @@ if uploaded_file:
     st.info(f"Found {len(parsed)} questions")
 
     if st.button("⚙️ Generate Solutions"):
-        st.warning("Running LLM… this may take a few minutes")
+    st.warning("Running LLM… this may take a few minutes")
 
-        results: List[Solution] = []
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+    results: List[Solution] = []
+    total_qs = len(parsed)
+    progress = st.progress(0, text="Starting...")
+    
+    for idx, q in enumerate(parsed, start=1):
+        try:
+            sol = generate_solution(q)
+            results.append(sol)
 
-        total_qs = len(parsed)
-        for idx, q in enumerate(parsed, start=1):
-            status_text.text(f"Processing {q.qid} of {total_qs}...")
-            try:
-                sol = generate_solution(q)
-                results.append(sol)
-                with st.expander(f"✅ Solution for {q.qid}: {q.text[:60]}..."):
-                    st.markdown(sol.content_markdown)
-            except Exception as e:
-                st.error(f"Failed for {q.qid}: {e}")
+            with st.expander(f"✅ Solution for {q.qid}: {q.text[:60]}..."):
+                st.markdown(sol.content_markdown)
 
-            progress_bar.progress(idx / total_qs)
+        except Exception as e:
+            st.error(f"Failed for {q.qid}: {e}")
 
-        status_text.text("✅ All questions processed!")
+        # Update progress bar
+        progress.progress(idx / total_qs, text=f"Processed {idx}/{total_qs} questions")
 
-        if results:
-            docx_bytes = export_docx(results)
-            pdf_bytes = export_pdf(results)
+    if results:
+        docx_bytes = export_docx(results)
+        pdf_bytes = export_pdf(results)
 
-            st.download_button(
-                label="⬇️ Download as DOCX",
-                data=docx_bytes,
-                file_name="UPSC_Solution_Book.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+        st.download_button(
+            label="⬇️ Download as DOCX",
+            data=docx_bytes,
+            file_name="UPSC_Solution_Book.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 
-            st.download_button(
-                label="⬇️ Download as PDF",
-                data=pdf_bytes,
-                file_name="UPSC_Solution_Book.pdf",
-                mime="application/pdf"
-            )
+        st.download_button(
+            label="⬇️ Download as PDF",
+            data=pdf_bytes,
+            file_name="UPSC_Solution_Book.pdf",
+            mime="application/pdf"
+        )

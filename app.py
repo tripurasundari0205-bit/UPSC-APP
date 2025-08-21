@@ -26,7 +26,8 @@ from openai import OpenAI
 import time
 import openai
 import streamlit as st
-from openai.error import RateLimitError, ServiceUnavailableError, APIError
+from openai._exceptions import RateLimitError, ServiceUnavailableError, APIError
+
 
 # ---------------------------
 # App Config

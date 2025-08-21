@@ -25,8 +25,9 @@ from reportlab.lib.styles import getSampleStyleSheet
 from openai import OpenAI
 import time
 import openai
+from openai import APIStatusError, APIConnectionError
 import streamlit as st
-from openai._exceptions import RateLimitError, ServiceUnavailableError, APIError
+
 
 
 # ---------------------------
@@ -190,9 +191,8 @@ def retrieve_snippets(question: Question) -> List[str]:
 # ---------------------------
 def call_llm(system_prompt: str, user_prompt: str) -> str:
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
     retries = 3
-    delay = 5  # seconds between retries
+    delay = 5
 
     for attempt in range(retries):
         try:
@@ -206,17 +206,18 @@ def call_llm(system_prompt: str, user_prompt: str) -> str:
             )
             return resp.choices[0].message.content
 
-        except (RateLimitError, ServiceUnavailableError, APIError) as e:
+        except (APIStatusError, APIConnectionError) as e:
             if attempt < retries - 1:
-                st.warning(f"⚠️ OpenAI limit reached or service busy. Retrying in {delay} sec… (Attempt {attempt+1}/{retries})")
+                st.warning(f"⚠️ OpenAI busy/limit hit. Retrying in {delay}s… ({attempt+1}/{retries})")
                 time.sleep(delay)
-                delay *= 2  # exponential backoff
+                delay *= 2
             else:
-                st.error("❌ OpenAI API error: Too many retries. Please try again later.")
-                return "ERROR: OpenAI API limit/service issue."
+                st.error("❌ OpenAI error: Too many retries. Try later.")
+                return "ERROR: OpenAI API issue."
         except Exception as e:
             st.error(f"❌ Unexpected error: {e}")
             return "ERROR: Unexpected failure in LLM call."
+
 
 # ---------------------------
 # Validation

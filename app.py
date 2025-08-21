@@ -5,7 +5,7 @@ import time
 import random
 from dataclasses import dataclass
 from typing import List
-from openai import OpenAI, error
+from openai import OpenAI
 import openai
 from docx import Document
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer

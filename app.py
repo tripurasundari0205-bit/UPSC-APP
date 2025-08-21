@@ -118,7 +118,7 @@ uploaded_file = st.file_uploader("📂 Upload your UPSC PYQ PDF", type=["pdf"])
 if uploaded_file:
       with st.spinner("Extracting text…"):
         raw_text = extract_text_from_pdf(uploaded)
-    blocks = split_questions(raw_text)
+        blocks = split_questions(raw_text)
     st.success("✅ File uploaded successfully! Ready to process.")
 
     if not blocks:

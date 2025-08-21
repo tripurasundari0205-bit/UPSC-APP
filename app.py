@@ -23,6 +23,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 # LLM (OpenAI SDK)
 from openai import OpenAI
+from groq import Groq
 import time
 import openai
 from openai import APIStatusError, APIConnectionError
@@ -190,14 +191,26 @@ def retrieve_snippets(question: Question) -> List[str]:
 # LLM call (OpenAI, reads key from Streamlit secrets)
 # ---------------------------
 def call_llm(system_prompt: str, user_prompt: str) -> str:
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-    retries = 3
-    delay = 5
+    try:
+        # Try OpenAI first
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.2,
+        )
+        return resp.choices[0].message.content
 
-    for attempt in range(retries):
+    except Exception as e:
+        st.warning(f"⚠️ OpenAI failed ({e}), switching to Groq fallback...")
+
         try:
-            resp = client.chat.completions.create(
-                model="gpt-4o-mini",
+            groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+            resp = groq_client.chat.completions.create(
+                model="mixtral-8x7b-32768",  # strong model, 32k context
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
@@ -206,17 +219,10 @@ def call_llm(system_prompt: str, user_prompt: str) -> str:
             )
             return resp.choices[0].message.content
 
-        except (APIStatusError, APIConnectionError) as e:
-            if attempt < retries - 1:
-                st.warning(f"⚠️ OpenAI busy/limit hit. Retrying in {delay}s… ({attempt+1}/{retries})")
-                time.sleep(delay)
-                delay *= 2
-            else:
-                st.error("❌ OpenAI error: Too many retries. Try later.")
-                return "ERROR: OpenAI API issue."
-        except Exception as e:
-            st.error(f"❌ Unexpected error: {e}")
-            return "ERROR: Unexpected failure in LLM call."
+        except Exception as e2:
+            st.error(f"❌ Both OpenAI and Groq failed: {e2}")
+            return "Error: Unable to generate response at this time."
+
 
 
 # ---------------------------

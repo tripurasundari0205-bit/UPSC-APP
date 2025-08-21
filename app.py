@@ -23,6 +23,14 @@ st.set_page_config(
 # Sidebar
 # -------------------
 st.sidebar.title("📘 UPSC Solution Generator")
+# ---------------------------
+# Sidebar Controls
+# ---------------------------
+st.sidebar.header("Settings")
+year = st.sidebar.text_input("Year (optional)")
+paper = st.sidebar.selectbox("Paper", ["Prelims", "Mains", "Other"], index=0)
+process_limit = st.sidebar.number_input("Max questions to process", 1, 200, 20)
+show_validator_notes = st.sidebar.checkbox("Show validator notes in output", value=True)
 st.sidebar.info(
     """
     **Steps to use:**
@@ -108,7 +116,30 @@ st.markdown("---")
 uploaded_file = st.file_uploader("📂 Upload your UPSC PYQ PDF", type=["pdf"])
 
 if uploaded_file:
+      with st.spinner("Extracting text…"):
+        raw_text = extract_text_from_pdf(uploaded)
+    blocks = split_questions(raw_text)
     st.success("✅ File uploaded successfully! Ready to process.")
+
+    if not blocks:
+        st.error("Could not detect numbered questions in this PDF. Check formatting or try another file.")
+    else:
+        st.success(f"Detected {len(blocks)} question blocks.")
+        parsed: List[Question] = []
+        for i, b in enumerate(blocks[:process_limit]):
+            q = parse_mcq_block(b)
+            q.year, q.paper, q.page = year, paper, i + 1
+            q.topic_tags = tag_topics(q.text)
+            parsed.append(q)
+
+        st.subheader("Preview detected questions")
+        for q in parsed:
+            with st.expander(f"Q: {q.text[:90]}..."):
+                st.markdown("**Detected Type:** " + q.qtype)
+                if q.options:
+                    st.markdown("**Options:**\n\n" + "\n".join(q.options))
+                st.markdown("**Tags:** " + ", ".join(q.topic_tags or []))
+
     if st.button("⚙️ Generate Solutions", type="primary", use_container_width=True):
         st.info("⏳ Running AI models… please wait, this may take a few minutes.")
         

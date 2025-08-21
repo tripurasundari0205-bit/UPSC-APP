@@ -147,7 +147,7 @@ if uploaded_file:
     st.info(f"Found {len(parsed)} questions")
 
     if st.button("⚙️ Generate Solutions"):
-    st.warning("Running LLM… this may take a few minutes")
+        st.warning("Running LLM… this may take a few minutes")
 
     results: List[Solution] = []
     total_qs = len(parsed)

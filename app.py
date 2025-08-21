@@ -17,11 +17,12 @@ if OPENAI_KEY:
     openai_client = OpenAI(api_key=OPENAI_KEY)
 
 # Groq client (fallback)
+# Groq client (fallback)
 class GroqClient:
     def __init__(self, api_key):
         self.api_key = api_key
 
-    def chat_completion(self, messages, model="llama-3.1-70b"):
+    def chat_completion(self, messages, model="llama3-70b-8192"):  # ✅ fixed model name
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {"Authorization": f"Bearer {self.api_key}"}
         payload = {"model": model, "messages": messages}

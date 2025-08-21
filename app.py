@@ -183,9 +183,6 @@ def retrieve_snippets(question: Question) -> List[str]:
 # ---------------------------
 # LLM call (OpenAI, reads key from Streamlit secrets)
 # ---------------------------
-import streamlit as st
-from openai import OpenAI
-from groq import Groq
 
 # --- Updated call_llm with fallback ---
 def call_llm(system_prompt: str, user_prompt: str) -> str:

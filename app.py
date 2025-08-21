@@ -203,7 +203,7 @@ def call_llm(system_prompt: str, user_prompt: str) -> str:
         try:
             groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
             resp = groq_client.chat.completions.create(
-                model="hog2-wizard-15b",  # strong model, 32k context
+                model="llama3-8b-8192",  # strong model, 32k context
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}

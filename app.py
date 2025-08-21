@@ -23,7 +23,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 
 # LLM (OpenAI SDK)
 from openai import OpenAI
-
+from groq import Groq
 # ---------------------------
 # App Config
 # ---------------------------
@@ -183,21 +183,44 @@ def retrieve_snippets(question: Question) -> List[str]:
 # ---------------------------
 # LLM call (OpenAI, reads key from Streamlit secrets)
 # ---------------------------
+import streamlit as st
+from openai import OpenAI
+from groq import Groq
+
+# --- Updated call_llm with fallback ---
 def call_llm(system_prompt: str, user_prompt: str) -> str:
-    if "OPENAI_API_KEY" not in st.secrets:
-        raise RuntimeError(
-            "OPENAI_API_KEY missing. Add it in Streamlit Cloud → App → Settings → Secrets."
+    try:
+        # Try OpenAI first
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.2,
         )
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",  # adjust to your preferred model
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.2,
-    )
-    return resp.choices[0].message.content
+        return resp.choices[0].message.content
+
+    except Exception as e:
+        st.warning(f"⚠️ OpenAI failed ({e}), switching to Groq fallback...")
+
+        try:
+            groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+            resp = groq_client.chat.completions.create(
+                model="hog2-wizard-15b",  # strong model, 32k context
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.2,
+            )
+            return resp.choices[0].message.content
+
+        except Exception as e2:
+            st.error(f"❌ Both OpenAI and Groq failed: {e2}")
+            return "Error: Unable to generate response at this time."
+
 
 # ---------------------------
 # Validation
